@@ -61,6 +61,8 @@ int obtenerNumeroColumnas(FILE* fp_errores,FILE* fp, int numRenglon)
         {
             if(buff[i]!=','&&buff[i]!='\n')
                 columna[columnaContador++]=buff[i];
+            if(i>0 && buff[i]==',' &&buff[i-1]==',')
+                columna[columnaContador++]=(char)20;
             if(buff[i]==','|| buff[i]=='\n'|| buff[i]=='\000')
             {   
                 if(columna[0]!='\0')
@@ -118,7 +120,7 @@ int obtenerNumeroRenglones(FILE *fp_errores, char* nombreArchivo)
         fputs(obtenerFecha(),fp_errores);
         fputs(" Error: Failed to close command stream \n",fp_errores);
     }
-    return numRenglones+1;
+    return numRenglones;
 }
 
 void imprimirErroresColumnas(int i, FILE* fp_errores)
@@ -136,7 +138,7 @@ void imprimirErroresColumnas(int i, FILE* fp_errores)
 
 void leerCsv()
 {
-    char *archivoEntrada="prueba.csv";
+    char *archivoEntrada="test.csv";
     char nombreArchivo[100];
     strcpy(nombreArchivo,"./");
     strcat(nombreArchivo,archivoEntrada);

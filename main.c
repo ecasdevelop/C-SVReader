@@ -41,6 +41,8 @@ void imprimirErroresFilas(FILE* fp_errores, int numRenglon)
     strcat(error,"] esta mal formada\n");
     fputs(error,fp_errores);
     printf("%s",error);
+    //memset(&error[0], 0, sizeof(error));
+    //memset(&renglon[0], 0, sizeof(renglon));
 }
 
 int obtenerLongitudColumna(char* columna)
@@ -83,6 +85,7 @@ colum* agregarColumna(nodoColumnas *nodo,char * columna, colum* p)
                 p=p->next;
             }
         }
+    //memset(&columna[0], 0, sizeof(columna));
     return p;    
     }   
 }
@@ -95,11 +98,13 @@ nodoColumnas* obtenerNumeroColumnas(FILE* fp_errores,FILE* fp, int numRenglon)
     nodo->col=(colum*)malloc(sizeof(colum));
     colum *p;
 
-    char buff[255], *m=fgets(buff,255,fp), columna[255];
+    char buff[1024]; memset(&buff[0], 0, sizeof(buff));
+    char *m=fgets(buff,1024,fp), columna[512];
     int i=0,contador=0, inicioColumna=0, terminoColumna=0,columnaContador=0; 
     memset(&columna[0], 0, sizeof(columna));
     while(buff[i]!='\0')
     {
+        //printf("[%c]",buff[i]);
         //caso 1 estan encerrados entre doble comilla
         if(buff[i]=='\"')
         {   
@@ -115,7 +120,7 @@ nodoColumnas* obtenerNumeroColumnas(FILE* fp_errores,FILE* fp, int numRenglon)
             if(buff[i]!='\"' && buff[i]!='\"')
                 columna[columnaContador++]=buff[i];
             if(terminoColumna==1){//Se formo toda la columna del csv
-                printf("[%s]",columna);
+                printf("\n[%s]",columna);
                 contador++;
                 p=agregarColumna(nodo,columna,p);
             }
@@ -157,13 +162,16 @@ nodoColumnas* obtenerNumeroColumnas(FILE* fp_errores,FILE* fp, int numRenglon)
     }
     printf("\nNumero de columnas %d\n",contador);
     nodo->numeroColumnas=contador;
+    //free(p);
+    //memset(&p[0], 0, sizeof(p));
     return nodo;
 }
 
 int obtenerNumeroRenglones(FILE *fp_errores, char* nombreArchivo)
 {
     FILE *pfCommand;
-    char command[40], data[512], comando[100];
+    int longitudComando=obtenerLongitudColumna(nombreArchivo)+30;
+    char command[longitudComando], data[512], comando[longitudComando];
     strcpy(comando, "wc -l "); strcat(comando,nombreArchivo);
     strcat(comando," | awk '{printf $1}'");
     // Obtengo el numero de renglones
@@ -174,7 +182,7 @@ int obtenerNumeroRenglones(FILE *fp_errores, char* nombreArchivo)
     pfCommand = popen(command,"r"); 
 
     // Get the data from the process execution
-    char* m=fgets(data, 512 , pfCommand);
+    char* m=fgets(data, longitudComando , pfCommand);
 
     // the data is now in 'data'
     //se convierte el dato a entero
@@ -185,6 +193,9 @@ int obtenerNumeroRenglones(FILE *fp_errores, char* nombreArchivo)
         fputs(obtenerFecha(),fp_errores);
         fputs(" Error: Failed to close command stream \n",fp_errores);
     }
+    memset(&command[0], 0, sizeof(command));
+    memset(&data[0], 0, sizeof(data));
+    memset(&comando[0], 0, sizeof(comando));
     return numRenglones;
 }
 
@@ -198,6 +209,8 @@ void imprimirErroresColumnas(int i, FILE* fp_errores)
     strcat(error,"] y [1] no coincide\n");
     printf("%s",error);
     fputs(error,fp_errores);
+    memset(&error[0], 0, sizeof(error));
+    memset(&numRenglon1Error[0], 0, sizeof(numRenglon1Error));
 }
 
 void leerCsv()
@@ -213,6 +226,7 @@ void leerCsv()
     nodoColumnas *columnasPorRenglon;
     for (int i=0;i<numRenglones;i++)
     {
+        printf("RENGLON:%d",i+1);
         columnasPorRenglon=obtenerNumeroColumnas(fp_errores,fp, i);
         numColumnas[i]=columnasPorRenglon->numeroColumnas;
         if(i>0)
@@ -221,6 +235,7 @@ void leerCsv()
                 imprimirErroresColumnas(i,fp_errores);
             }
         printf("\n");
+        memset(&columnasPorRenglon[0], 0, sizeof(columnasPorRenglon));
     }   
     fclose(fp_errores);
     //fclose(fp_output);

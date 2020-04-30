@@ -3,6 +3,19 @@
 #include <string.h>
 #include <time.h>
 
+typedef struct colum colum ;
+struct colum{
+    char *contenido;
+    colum* next;
+};
+
+typedef struct nodoColumnas nodoColumnas;
+
+struct nodoColumnas{
+    colum* col;
+    int numeroColumnas;
+};
+
 char* obtenerFecha()
 {
     time_t timer;
@@ -19,18 +32,69 @@ char* obtenerFecha()
 
 void imprimirErroresFilas(FILE* fp_errores, int numRenglon)
 {
-    char error[100];
-    char renglon[10];
+    char error[100], renglon[10];
     strcpy(error,obtenerFecha());
     strcat(error," ");
-    strcat(error,"La fila [");sprintf(renglon, "%d",numRenglon+1);
-    strcat(error,renglon);strcat(error,"] esta mal formada\n");
+    strcat(error,"La fila [");
+    sprintf(renglon, "%d",numRenglon+1);
+    strcat(error,renglon);
+    strcat(error,"] esta mal formada\n");
     fputs(error,fp_errores);
     printf("%s",error);
 }
 
-int obtenerNumeroColumnas(FILE* fp_errores,FILE* fp, int numRenglon)
+int obtenerLongitudColumna(char* columna)
 {
+    if(columna==NULL)
+        return 0;
+    if(columna[0]=='\0')
+        return 0;
+    int i=0;
+    while(columna[i]!='\0')
+    {
+        i++;
+    }
+    return i;
+}
+
+colum* agregarColumna(nodoColumnas *nodo,char * columna, colum* p)
+{
+    int columnaLongitud = obtenerLongitudColumna(columna);
+    //printf("AGREGAR COLUMNA");
+    {
+        if(nodo->col!=NULL)
+        {   //se añade la primera vez, cuando no hay datos
+            if(!nodo->col->contenido)
+            {
+                nodo->col->contenido=(char*)malloc(columnaLongitud);
+                strcpy(nodo->col->contenido,columna);
+                nodo->col->next=malloc(sizeof(colum));
+                p=nodo->col->next;
+                ////printf("%s\n",nodo->col->contenido);
+            }
+            else//cuando la lista tiene por lo menos un dato(nodo) con información
+            {   
+                if(!p)
+                    p=(colum*)malloc(sizeof(colum));
+                p->contenido=(char*)malloc(columnaLongitud);
+                strcpy(p->contenido,columna);
+                ////printf("%s\n",p->contenido);
+                p->next=malloc(sizeof(colum));
+                p=p->next;
+            }
+        }
+    return p;    
+    }   
+}
+
+//Para el caso 1, solo se permiten comillas dobles cuando se abre y termina el contenido de un campo
+//no se permiten comilla doble intermedia
+nodoColumnas* obtenerNumeroColumnas(FILE* fp_errores,FILE* fp, int numRenglon)
+{
+    nodoColumnas* nodo=(nodoColumnas*)malloc(sizeof(nodoColumnas));
+    nodo->col=(colum*)malloc(sizeof(colum));
+    colum *p;
+
     char buff[255], *m=fgets(buff,255,fp), columna[255];
     int i=0,contador=0, inicioColumna=0, terminoColumna=0,columnaContador=0; 
     memset(&columna[0], 0, sizeof(columna));
@@ -53,6 +117,7 @@ int obtenerNumeroColumnas(FILE* fp_errores,FILE* fp, int numRenglon)
             if(terminoColumna==1){//Se formo toda la columna del csv
                 printf("[%s]",columna);
                 contador++;
+                p=agregarColumna(nodo,columna,p);
             }
         }
 
@@ -69,13 +134,15 @@ int obtenerNumeroColumnas(FILE* fp_errores,FILE* fp, int numRenglon)
                 {
                     printf("[%s]",columna);//se formo toda la columna del csv
                     contador++;
+                    p=agregarColumna(nodo,columna,p);
                 }
                 memset(&columna[0], 0, sizeof(columna));
                 columnaContador=0;
             }
         }
-
-        if(inicioColumna==1&&terminoColumna==0&& (buff[i]=='\n'||buff[i]=='\0'))//se abrieron comillas dobles pero no se cerraron
+        
+        //se abrieron comillas dobles pero no se cerraron
+        if(inicioColumna==1&&terminoColumna==0&& (buff[i]=='\n'||buff[i]=='\0'))
         {
             imprimirErroresFilas(fp_errores, numRenglon);
         }
@@ -89,16 +156,14 @@ int obtenerNumeroColumnas(FILE* fp_errores,FILE* fp, int numRenglon)
         }
     }
     printf("\nNumero de columnas %d\n",contador);
-    return contador;
+    nodo->numeroColumnas=contador;
+    return nodo;
 }
 
 int obtenerNumeroRenglones(FILE *fp_errores, char* nombreArchivo)
 {
     FILE *pfCommand;
-    char command[40];
-    char data[512];
-
-    char comando[100];
+    char command[40], data[512], comando[100];
     strcpy(comando, "wc -l "); strcat(comando,nombreArchivo);
     strcat(comando," | awk '{printf $1}'");
     // Obtengo el numero de renglones
@@ -125,8 +190,7 @@ int obtenerNumeroRenglones(FILE *fp_errores, char* nombreArchivo)
 
 void imprimirErroresColumnas(int i, FILE* fp_errores)
 {
-    char error[100];
-    char numRenglon1Error[10];
+    char error[100], numRenglon1Error[10];
     strcpy(error,obtenerFecha());
     strcat(error," El numero de columnas del renglon [");
     sprintf(numRenglon1Error,"%d",i+1);
@@ -138,20 +202,19 @@ void imprimirErroresColumnas(int i, FILE* fp_errores)
 
 void leerCsv()
 {
-    char *archivoEntrada="test.csv";
-    char nombreArchivo[100];
+    char *archivoEntrada="prueba.csv", nombreArchivo[100];
     strcpy(nombreArchivo,"./");
     strcat(nombreArchivo,archivoEntrada);
     FILE *fp, *fp_output, *fp_errores;
     fp = fopen(nombreArchivo, "r");
     //fp_output=fopen("./salida.sql","w+");
     fp_errores=fopen("./errores.log","w+");
-    int numRenglones=obtenerNumeroRenglones(fp_errores, nombreArchivo);
-    int numColumnas[numRenglones];
-    
+    int numRenglones=obtenerNumeroRenglones(fp_errores, nombreArchivo), numColumnas[numRenglones];
+    nodoColumnas *columnasPorRenglon;
     for (int i=0;i<numRenglones;i++)
     {
-        numColumnas[i]=obtenerNumeroColumnas(fp_errores,fp, i);
+        columnasPorRenglon=obtenerNumeroColumnas(fp_errores,fp, i);
+        numColumnas[i]=columnasPorRenglon->numeroColumnas;
         if(i>0)
             if(numColumnas[i]!=numColumnas[0])
             {

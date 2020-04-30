@@ -56,7 +56,7 @@ int obtenerLongitudColumna(char* columna)
     {
         i++;
     }
-    return i;
+    return i+1;
 }
 
 colum* agregarColumna(nodoColumnas *nodo,char * columna, colum* p)
@@ -98,8 +98,8 @@ nodoColumnas* obtenerNumeroColumnas(FILE* fp_errores,FILE* fp, int numRenglon)
     nodo->col=(colum*)malloc(sizeof(colum));
     colum *p;
 
-    char buff[1024]; memset(&buff[0], 0, sizeof(buff));
-    char *m=fgets(buff,1024,fp), columna[512];
+    char buff[512]; memset(&buff[0], 0, sizeof(buff));
+    char *m=fgets(buff,512,fp), columna[256];
     int i=0,contador=0, inicioColumna=0, terminoColumna=0,columnaContador=0; 
     memset(&columna[0], 0, sizeof(columna));
     while(buff[i]!='\0')
@@ -170,7 +170,7 @@ nodoColumnas* obtenerNumeroColumnas(FILE* fp_errores,FILE* fp, int numRenglon)
 int obtenerNumeroRenglones(FILE *fp_errores, char* nombreArchivo)
 {
     FILE *pfCommand;
-    int longitudComando=obtenerLongitudColumna(nombreArchivo)+30;
+    int longitudComando=obtenerLongitudColumna(nombreArchivo)+40;
     char command[longitudComando], data[512], comando[longitudComando];
     strcpy(comando, "wc -l "); strcat(comando,nombreArchivo);
     strcat(comando," | awk '{printf $1}'");
